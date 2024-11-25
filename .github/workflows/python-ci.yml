@@ -24,7 +24,7 @@ jobs:
 
       # 2. Install dependencies
       - name: Install dependencies
-        run: make deps
+        run: make requirements
 
       # 3. Run tests
       - name: Run tests

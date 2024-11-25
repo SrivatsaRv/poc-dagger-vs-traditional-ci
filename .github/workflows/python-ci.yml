@@ -70,7 +70,7 @@ jobs:
       # 9. Update image tag in deployment.yml
       - name: Update image tag in deployment.yml
         run: |
-          TAG=$(grep '^TAG' Makefile | cut -d '=' -f 2 | tr -d ' ')
+          TAG=$(grep '^TAG' python-app/Makefile | cut -d '=' -f 2 | tr -d ' ')
           yq -i '.spec.template.spec.containers[0].image = "docker.io/srivatsarv21/docker-dagger-poc:" + env(TAG)' infrastructure/deployment.yml
 
           # Print the updated deployment.yml for debugging
@@ -85,5 +85,5 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add infrastructure/deployment.yml
-          git commit -m "Update deployment.yml with image tag $(grep '^TAG' Makefile | cut -d '=' -f 2 | tr -d ' ')"
+          git commit -m "Update deployment.yml with image tag $(grep '^TAG' python-app/Makefile | cut -d '=' -f 2 | tr -d ' ')"
           git push origin main

@@ -10,11 +10,11 @@ requirements:
 
 # Run tests
 test:
-	pytest python-app/test-app.py
+	pytest test-app.py
 
 # Run linting with flake8
 lint:
-	flake8 python-app/app.py
+	flake8 app.py
 
 # Build Docker image with semver tag
 docker-build:

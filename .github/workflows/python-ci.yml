@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - '**'  # Trigger on any changes in the entire directory
+      - '**'
   pull_request:
     branches:
       - main
@@ -13,9 +13,16 @@ on:
       - '**'
   workflow_dispatch:  # Allows manual triggering of the workflow
 
+permissions:
+  contents: write
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
     steps:
       # 1. Checkout the code
@@ -55,17 +62,11 @@ jobs:
       - name: Build Docker image
         working-directory: python-app
         run: make docker-build
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          REPOSITORY: docker-dagger-poc
 
       # 8. Push Docker image
       - name: Push Docker image
         working-directory: python-app
         run: make docker-push
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          REPOSITORY: docker-dagger-poc
 
       # 9. Update image tag in deployment.yml
       - name: Update image tag in deployment.yml
@@ -77,13 +78,13 @@ jobs:
           echo "Updated contents of deployment.yml:"
           cat infrastructure/deployment.yml
         env:
-          TAG: ${{ secrets.TAG }}
+          TAG: ${{ env.TAG }}
 
-      # 10. Commit updated deployment.yml
-      - name: Commit updated deployment.yml
+      # 10. Commit and push the updated deployment.yml
+      - name: Commit and push updated deployment.yml
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          git config --local user.email "srivatsa.rv@one2n.in"
+          git config --local user.name "srivatsa.rv"
           git add infrastructure/deployment.yml
           git commit -m "Update deployment.yml with image tag $(grep '^TAG' python-app/Makefile | cut -d '=' -f 2 | tr -d ' ')"
           git push origin main

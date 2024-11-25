@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
         - name: python-app
-          image: docker.io/“srivatsarv21”/docker-dagger-poc:latest
+          image: docker.io/srivatsarv21/docker-dagger-poc:1.2.0
           ports:
             - containerPort: 5000

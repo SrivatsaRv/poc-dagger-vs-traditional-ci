@@ -18,7 +18,7 @@ lint:
 
 # Build Docker image with semver tag
 docker-build:
-	docker build -t $(REGISTRY)/$(IMAGE_NAME):$(TAG) .
+	docker build -t $(REGISTRY)/$(IMAGE_NAME):$(TAG) python-app/
 
 # Push Docker image to registry
 docker-push:

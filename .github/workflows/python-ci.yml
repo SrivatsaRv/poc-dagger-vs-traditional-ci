@@ -5,13 +5,12 @@ on:
     branches:
       - main
     paths:
-      - .github/workflows/**
-      - python-app/**
+      - '**'  # Trigger on any changes in the entire directory
   pull_request:
     branches:
       - main
     paths:
-      - python-app/**
+      - '**'
   workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
@@ -23,22 +22,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Install dependencies
+      # 2. Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      # 3. Install dependencies
       - name: Install dependencies
+        working-directory: python-app
         run: make requirements
 
-      # 3. Run tests
+      # 4. Run tests
       - name: Run tests
+        working-directory: python-app
         run: make test
 
-      # 4. Lint code
+      # 5. Lint code
       - name: Lint code
+        working-directory: python-app
         run: make lint
 
-      # 5. Build Docker image
+      # 6. Build Docker image
       - name: Build Docker image
+        working-directory: python-app
         run: make docker-build
 
-      # 6. Push Docker image
+      # 7. Push Docker image
       - name: Push Docker image
+        working-directory: python-app
         run: make docker-push

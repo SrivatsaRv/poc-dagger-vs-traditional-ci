@@ -1,11 +1,12 @@
 # Variables
-TAG ?= 1.0.0  # Default semantic version, can be overridden via command line
+TAG ?= 1.1.0  # Default semantic version, can be overridden via command line
 REGISTRY := docker.io
 USERNAME := srivatsarv21
 REPOSITORY := docker-dagger-poc
 IMAGE_NAME := $(REGISTRY)/$(USERNAME)/$(REPOSITORY)
 
 CONTAINER_NAME := python-app-container
+DEPLOYMENT_FILE := infrastructure/deployment.yml
 
 # Install dependencies
 requirements:
@@ -35,11 +36,19 @@ docker-build:
 docker-push:
 	docker push $(IMAGE_NAME):$(TAG)
 
-# Run Flask app using the last pushed Docker image
-run:
-	docker run --rm -d -p 5000:5000 --name $(CONTAINER_NAME) $(IMAGE_NAME):$(TAG)
+# Update version in deployment.yml
+update-deployment:
+	@if ! command -v yq &>/dev/null; then \
+		echo "Error: yq is not installed. Please install it before running this target."; \
+		exit 1; \
+	fi
+	yq -i '.spec.template.spec.containers[0].image = "$(IMAGE_NAME):$(TAG)"' $(DEPLOYMENT_FILE)
 
-# Stop and remove the running container (cleanup)
-stop:
-	docker stop $(CONTAINER_NAME)
-	docker rm $(CONTAINER_NAME)
+# Chain: Build, push, and update deployment
+ci-pipeline: docker-login docker-build docker-push update-deployment
+
+# Clean up Docker images and containers
+clean:
+	docker stop $(CONTAINER_NAME) || true
+	docker rm $(CONTAINER_NAME) || true
+	docker rmi $(IMAGE_NAME):$(TAG) || true

@@ -28,27 +28,35 @@ jobs:
         with:
           python-version: 3.x
 
-      # 3. Install dependencies
+      # 3. Log in to Docker Hub
+      - name: Log in to Docker Hub
+        run: make docker-login
+        working-directory: python-app
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 4. Install dependencies
       - name: Install dependencies
         working-directory: python-app
         run: make requirements
 
-      # 4. Run tests
+      # 5. Run tests
       - name: Run tests
         working-directory: python-app
         run: make test
 
-      # 5. Lint code
+      # 6. Lint code
       - name: Lint code
         working-directory: python-app
         run: make lint
 
-      # 6. Build Docker image
+      # 7. Build Docker image
       - name: Build Docker image
         working-directory: python-app
         run: make docker-build
 
-      # 7. Push Docker image
+      # 8. Push Docker image
       - name: Push Docker image
         working-directory: python-app
         run: make docker-push

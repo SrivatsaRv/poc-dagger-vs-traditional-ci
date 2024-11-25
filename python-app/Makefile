@@ -16,6 +16,10 @@ test:
 lint:
 	flake8 app.py
 
+# Docker login
+docker-login:
+	echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
+
 # Build Docker image with semver tag
 docker-build:
 	docker build -t $(REGISTRY)/$(IMAGE_NAME):$(TAG) .

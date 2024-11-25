@@ -57,6 +57,7 @@ jobs:
         run: make docker-build
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          REPOSITORY: docker-dagger-poc
 
       # 8. Push Docker image
       - name: Push Docker image
@@ -64,3 +65,4 @@ jobs:
         run: make docker-push
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          REPOSITORY: docker-dagger-poc

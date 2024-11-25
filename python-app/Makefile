@@ -1,7 +1,10 @@
 # Variables
 TAG ?= 1.0.0  # Default semantic version, can be overridden via command line
 REGISTRY := docker.io
-IMAGE_NAME := python-app
+USERNAME := srivatsarv21
+REPOSITORY := docker-dagger-poc
+IMAGE_NAME := $(REGISTRY)/$(USERNAME)/$(REPOSITORY)
+
 CONTAINER_NAME := python-app-container
 
 # Install dependencies
@@ -26,15 +29,15 @@ docker-login:
 
 # Build Docker image with semver tag
 docker-build:
-	docker build -t $(REGISTRY)/$(DOCKERHUB_USERNAME)/$(IMAGE_NAME):$(TAG) .
+	docker build -t $(IMAGE_NAME):$(TAG) .
 
 # Push Docker image to registry
 docker-push:
-	docker push $(REGISTRY)/$(DOCKERHUB_USERNAME)/$(IMAGE_NAME):$(TAG)
+	docker push $(IMAGE_NAME):$(TAG)
 
 # Run Flask app using the last pushed Docker image
 run:
-	docker run --rm -d -p 5000:5000 --name $(CONTAINER_NAME) $(REGISTRY)/$(DOCKERHUB_USERNAME)/$(IMAGE_NAME):$(TAG)
+	docker run --rm -d -p 5000:5000 --name $(CONTAINER_NAME) $(IMAGE_NAME):$(TAG)
 
 # Stop and remove the running container (cleanup)
 stop:

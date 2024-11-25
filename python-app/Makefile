@@ -1,5 +1,5 @@
 # Variables
-TAG ?= 1.1.0  # Default semantic version, can be overridden via command line
+TAG ?= 1.2.0
 REGISTRY := docker.io
 USERNAME := srivatsarv21
 REPOSITORY := docker-dagger-poc

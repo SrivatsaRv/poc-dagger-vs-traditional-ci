@@ -6,7 +6,7 @@ CONTAINER_NAME := python-app-container
 
 # Install dependencies
 requirements:
-	pip3 install -r python-app/requirements.txt
+	pip3 install -r requirements.txt
 
 # Run tests
 test:

@@ -5,16 +5,16 @@ IMAGE_NAME := python-app
 CONTAINER_NAME := python-app-container
 
 # Install dependencies
-deps:
-	pip3 install -r requirements.txt
+requirements:
+	pip3 install -r python-app/requirements.txt
 
 # Run tests
 test:
-	pytest test-app.py
+	pytest python-app/test-app.py
 
 # Run linting with flake8
 lint:
-	flake8 app.py
+	flake8 python-app/app.py
 
 # Build Docker image with semver tag
 docker-build:
@@ -32,11 +32,3 @@ run:
 stop:
 	docker stop $(CONTAINER_NAME)
 	docker rm $(CONTAINER_NAME)
-
-# Run all steps sequentially
-run_all:
-	@make deps
-	@make lint
-	@make test
-	@make docker-build
-	@make docker-push

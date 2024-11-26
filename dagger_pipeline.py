@@ -43,42 +43,66 @@ async def lint(client, src):
     return lint_result
 
 
-async def docker_build_push(client, src, tag, username, token):
-    """Build and push Docker image."""
+async def docker_build(client, src, tag, username):
+    """Build Docker image."""
     dockerfile_context = src.directory("python-app")
     print(f"Building Docker image with tag: {tag}")
 
-    image = (
-        client.container()
-        .from_("docker")
-        .with_mounted_directory("/src", dockerfile_context)
-        .with_workdir("/src")
-        .with_exec([
-            "docker",
-            "build",
-            "-t",
-            f"docker.io/{username}/docker-dagger-poc:{tag}",
-            "."
-        ])
-    )
+    try:
+        image = (
+            client.container()
+            .from_("docker:dind")
+            .with_mounted_directory("/src", dockerfile_context)
+            .with_workdir("/src")
+            .with_exec([
+                "docker",
+                "build",
+                "-t",
+                f"docker.io/{username}/docker-dagger-poc:{tag}",
+                "."
+            ])
+        )
+        print(f"Successfully built image with tag {tag}")
+        return image
+    except Exception as e:
+        print(f"Failed to build Docker image: {str(e)}")
+        raise
 
-    authed_image = (
-        image
+
+async def docker_push(client, username, token, tag):
+    """Push Docker image to DockerHub."""
+    print(f"Pushing image docker.io/{username}/docker-dagger-poc:{tag} to DockerHub")
+    
+    docker = (
+        client.container()
+        .from_("docker:dind")
         .with_env_variable("DOCKERHUB_USERNAME", username)
         .with_secret_variable(
             "DOCKERHUB_TOKEN",
             client.set_secret("dockerhub_token", token)
         )
-        .with_exec(["docker", "login", "-u", username, "-p", token])
     )
 
-    pushed_image = authed_image.with_exec([
-        "docker",
-        "push",
-        f"docker.io/{username}/docker-dagger-poc:{tag}"
-    ])
+    # Login to DockerHub
+    try:
+        await docker.with_exec(["docker", "login", "-u", username, "-p", token])
+        print("Successfully logged into DockerHub")
+    except Exception as e:
+        print(f"Failed to login to DockerHub: {str(e)}")
+        raise
 
-    return pushed_image
+    # Push the image
+    try:
+        await docker.with_exec([
+            "docker",
+            "push",
+            f"docker.io/{username}/docker-dagger-poc:{tag}"
+        ])
+        print(f"Successfully pushed image with tag {tag}")
+        return True
+    except Exception as e:
+        print(f"Failed to push image: {str(e)}")
+        raise
 
 
 async def update_deployment(client, src, tag, username):
@@ -145,41 +169,39 @@ async def main():
     with open("python-app/VERSION", "r") as f:
         tag = f.read().strip()
 
-    print(f"Building with tag: {tag}")
+    print(f"Starting pipeline with tag: {tag}")
 
     async with dagger.Connection() as client:
         src = client.host().directory(".", exclude=[".git"])
         src_with_git = client.host().directory(".", include=[".git"])
 
-        if not os.environ.get("CI"):
-            print("Running tests...")
-            await test(client, src)
-
-            print("Running linting...")
-            await lint(client, src)
-
-            print(f"Building Docker image with tag: {tag}...")
-            await docker_build_push(client, src, tag, username, token)
-
-            print("Local validation complete. Changes will be made in CI.")
-        else:
+        if os.environ.get("CI"):
             print("Running in CI environment...")
+            
             print("Running tests...")
             await test(client, src)
 
             print("Running linting...")
             await lint(client, src)
 
+            # Separate build step
             print(f"Building Docker image with tag: {tag}...")
-            await docker_build_push(client, src, tag, username, token)
+            built_image = await docker_build(client, src, tag, username)
 
-            print("Updating deployment...")
-            updated_file = await update_deployment(client, src, tag, username)
+            # Separate push step
+            print("Pushing to DockerHub...")
+            push_success = await docker_push(client, username, token, tag)
 
-            print("Committing and pushing changes...")
-            await commit_and_push(client, src_with_git, updated_file, tag)
+            if push_success:
+                print("Updating deployment...")
+                updated_file = await update_deployment(client, src, tag, username)
 
-            print("CI pipeline completed successfully")
+                print("Committing and pushing changes...")
+                await commit_and_push(client, src_with_git, updated_file, tag)
+                
+                print("CI pipeline completed successfully")
+            else:
+                raise Exception("Failed to push to DockerHub, deployment.yml not updated")
 
 
 if __name__ == "__main__":

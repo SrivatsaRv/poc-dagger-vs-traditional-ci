@@ -43,25 +43,43 @@ async def lint(client, src):
     return lint_result
 
 
+async def setup_docker(client):
+    """Initialize Docker daemon in the container."""
+    docker = (
+        client.container()
+        .from_("docker:dind")
+        # Add Docker daemon settings
+        .with_mounted_cache("/var/lib/docker", client.cache_volume("docker-cache"))
+        .with_exec(["dockerd", "--host=unix:///var/run/docker.sock", "--tls=false", "--debug"])
+    )
+    return docker
+
+
 async def docker_build(client, src, tag, username):
     """Build Docker image."""
     dockerfile_context = src.directory("python-app")
     print(f"Building Docker image with tag: {tag}")
 
     try:
-        image = (
+        # Setup Docker daemon first
+        docker = (
             client.container()
             .from_("docker:dind")
+            .with_mounted_cache("/var/lib/docker", client.cache_volume("docker-cache"))
             .with_mounted_directory("/src", dockerfile_context)
             .with_workdir("/src")
-            .with_exec([
-                "docker",
-                "build",
-                "-t",
-                f"docker.io/{username}/docker-dagger-poc:{tag}",
-                "."
-            ])
+            # Start Docker daemon
+            .with_exec(["dockerd", "--host=unix:///var/run/docker.sock", "--tls=false"])
         )
+
+        # Build the image
+        image = docker.with_exec([
+            "docker",
+            "build",
+            "-t",
+            f"docker.io/{username}/docker-dagger-poc:{tag}",
+            "."
+        ])
         print(f"Successfully built image with tag {tag}")
         return image
     except Exception as e:
@@ -73,26 +91,32 @@ async def docker_push(client, username, token, tag):
     """Push Docker image to DockerHub."""
     print(f"Pushing image docker.io/{username}/docker-dagger-poc:{tag} to DockerHub")
     
-    docker = (
-        client.container()
-        .from_("docker:dind")
-        .with_env_variable("DOCKERHUB_USERNAME", username)
-        .with_secret_variable(
-            "DOCKERHUB_TOKEN",
-            client.set_secret("dockerhub_token", token)
+    try:
+        # Setup Docker daemon with cache
+        docker = (
+            client.container()
+            .from_("docker:dind")
+            .with_mounted_cache("/var/lib/docker", client.cache_volume("docker-cache"))
+            .with_env_variable("DOCKERHUB_USERNAME", username)
+            .with_secret_variable(
+                "DOCKERHUB_TOKEN",
+                client.set_secret("dockerhub_token", token)
+            )
+            # Start Docker daemon
+            .with_exec(["dockerd", "--host=unix:///var/run/docker.sock", "--tls=false"])
         )
-    )
 
-    # Login to DockerHub
-    try:
-        await docker.with_exec(["docker", "login", "-u", username, "-p", token])
+        # Login to DockerHub
+        await docker.with_exec([
+            "docker",
+            "login",
+            "-u", username,
+            "-p", token,
+            "docker.io"
+        ])
         print("Successfully logged into DockerHub")
-    except Exception as e:
-        print(f"Failed to login to DockerHub: {str(e)}")
-        raise
 
-    # Push the image
-    try:
+        # Push the image
         await docker.with_exec([
             "docker",
             "push",
@@ -101,7 +125,7 @@ async def docker_push(client, username, token, tag):
         print(f"Successfully pushed image with tag {tag}")
         return True
     except Exception as e:
-        print(f"Failed to push image: {str(e)}")
+        print(f"Failed during Docker push operation: {str(e)}")
         raise
 
 

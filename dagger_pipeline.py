@@ -43,45 +43,28 @@ async def lint(client, src):
     return lint_result
 
 
-async def setup_docker(client):
-    """Initialize Docker daemon in the container."""
-    docker = (
-        client.container()
-        .from_("docker:dind")
-        # Add Docker daemon settings
-        .with_mounted_cache("/var/lib/docker", client.cache_volume("docker-cache"))
-        .with_exec(["dockerd", "--host=unix:///var/run/docker.sock", "--tls=false", "--debug"])
-    )
-    return docker
-
-
 async def docker_build(client, src, tag, username):
     """Build Docker image."""
     dockerfile_context = src.directory("python-app")
     print(f"Building Docker image with tag: {tag}")
 
     try:
-        # Setup Docker daemon first
-        docker = (
+        container = (
             client.container()
-            .from_("docker:dind")
-            .with_mounted_cache("/var/lib/docker", client.cache_volume("docker-cache"))
+            .from_("python:3.9-slim")
             .with_mounted_directory("/src", dockerfile_context)
             .with_workdir("/src")
-            # Start Docker daemon
-            .with_exec(["dockerd", "--host=unix:///var/run/docker.sock", "--tls=false"])
         )
 
         # Build the image
-        image = docker.with_exec([
+        await container.with_exec([
             "docker",
             "build",
             "-t",
-            f"docker.io/{username}/docker-dagger-poc:{tag}",
+            f"{username}/docker-dagger-poc:{tag}",  # Push without docker.io prefix
             "."
         ])
         print(f"Successfully built image with tag {tag}")
-        return image
     except Exception as e:
         print(f"Failed to build Docker image: {str(e)}")
         raise
@@ -89,43 +72,32 @@ async def docker_build(client, src, tag, username):
 
 async def docker_push(client, username, token, tag):
     """Push Docker image to DockerHub."""
-    print(f"Pushing image docker.io/{username}/docker-dagger-poc:{tag} to DockerHub")
+    repository = f"{username}/docker-dagger-poc"
+    image_tag = f"{repository}:{tag}"
+    print(f"Pushing image {image_tag} to DockerHub")
     
     try:
-        # Setup Docker daemon with cache
-        docker = (
-            client.container()
-            .from_("docker:dind")
-            .with_mounted_cache("/var/lib/docker", client.cache_volume("docker-cache"))
-            .with_env_variable("DOCKERHUB_USERNAME", username)
-            .with_secret_variable(
-                "DOCKERHUB_TOKEN",
-                client.set_secret("dockerhub_token", token)
-            )
-            # Start Docker daemon
-            .with_exec(["dockerd", "--host=unix:///var/run/docker.sock", "--tls=false"])
-        )
-
-        # Login to DockerHub
-        await docker.with_exec([
+        container = client.container().from_("python:3.9-slim")
+        
+        # Login to DockerHub with credentials from GitHub secrets
+        await container.with_exec([
             "docker",
             "login",
             "-u", username,
             "-p", token,
-            "docker.io"
         ])
-        print("Successfully logged into DockerHub")
+        print(f"Successfully logged into DockerHub as {username}")
 
-        # Push the image
-        await docker.with_exec([
+        # Push the image to your specific repository
+        await container.with_exec([
             "docker",
             "push",
-            f"docker.io/{username}/docker-dagger-poc:{tag}"
+            image_tag  # Push using the repository name directly
         ])
-        print(f"Successfully pushed image with tag {tag}")
+        print(f"Successfully pushed image {image_tag}")
         return True
     except Exception as e:
-        print(f"Failed during Docker push operation: {str(e)}")
+        print(f"Failed to push image to {repository}: {str(e)}")
         raise
 
 
@@ -133,23 +105,13 @@ async def update_deployment(client, src, tag, username):
     """Update deployment.yml with new image tag."""
     deployment_path = "infrastructure/deployment.yml"
 
-    container = (
-        client.container()
-        .from_("mikefarah/yq")
-        .with_mounted_directory("/work", src)
-        .with_workdir("/work")
-    )
-
-    image_path = f"docker.io/{username}/docker-dagger-poc:{tag}"
-    updated = container.with_exec([
+    # Run yq directly on the host
+    await client.with_exec([
         "yq",
         "-i",
-        f'.spec.template.spec.containers[0].image = "{image_path}"',
+        f'.spec.template.spec.containers[0].image = "{username}/docker-dagger-poc:{tag}"',
         deployment_path
     ])
-
-    updated_file = updated.file(deployment_path)
-    return updated_file
 
 
 async def commit_and_push(client, src, updated_file, tag):
@@ -167,8 +129,7 @@ async def commit_and_push(client, src, updated_file, tag):
         .from_("alpine/git")
         .with_mounted_directory("/src", new_src.directory("."))
         .with_workdir("/src")
-        .with_exec(["git", "config", "--local", "user.email",
-                   "srivatsa.rv@one2n.in"])
+        .with_exec(["git", "config", "--local", "user.email", "srivatsa.rv@one2n.in"])
         .with_exec(["git", "config", "--local", "user.name", "srivatsa.rv"])
         .with_exec(["git", "add", "infrastructure/deployment.yml"])
         .with_exec([
@@ -210,7 +171,7 @@ async def main():
 
             # Separate build step
             print(f"Building Docker image with tag: {tag}...")
-            built_image = await docker_build(client, src, tag, username)
+            await docker_build(client, src, tag, username)
 
             # Separate push step
             print("Pushing to DockerHub...")

@@ -22,31 +22,48 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Check Go version
+      # Step 2: Navigate to todolist directory
+      - name: Change working directory
+        run: cd todolist
+
+      # Step 3: Check Go version
       - name: Verify Go version
-        run: go version
+        run: |
+          cd todolist
+          go version
 
-
-      # Step 3: Run lint
+      # Step 4: Run lint
       - name: Run lint
-        run: make lint
+        run: |
+          cd todolist
+          make lint
 
-      # Step 4: Run unit tests
+      # Step 5: Run unit tests
       - name: Run unit tests
-        run: make test
+        run: |
+          cd todolist
+          make test
 
-      # Step 5: Start the application
+      # Step 6: Start the application
       - name: Start application
-        run: make up
+        run: |
+          cd todolist
+          make up
 
-      # Step 6: Run end-to-end tests
+      # Step 7: Run end-to-end tests
       - name: Run end-to-end tests
-        run: make test-e2e
+        run: |
+          cd todolist
+          make test-e2e
 
-      # Step 7: Build Docker image
+      # Step 8: Build Docker image
       - name: Build Docker image
-        run: make docker-build
+        run: |
+          cd todolist
+          make docker-build
 
-      # Step 8: Push Docker image
+      # Step 9: Push Docker image
       - name: Push Docker image
-        run: make docker-push
+        run: |
+          cd todolist
+          make docker-push

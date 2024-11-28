@@ -55,5 +55,6 @@ jobs:
         run: make docker-build
 
       # Step 10: Push Docker image
+      - name: Push Docker Image to TTL
         working-directory: ./todolist-app
         run: make docker-push

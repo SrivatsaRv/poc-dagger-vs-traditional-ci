@@ -5,12 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'todolist/**'
+      - 'todolist-app/**'
   pull_request:
     branches:
       - main
     paths:
-      - 'todolist/**'
+      - 'todolist-app/**'
   workflow_dispatch:
 
 jobs:
@@ -22,48 +22,42 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Navigate to todolist directory
+      # Step 2: Navigate to todolist-app directory
       - name: Change working directory
-        run: cd todolist
+        working-directory: ./todolist-app
+        run: echo "Working directory set to todolist-app"
 
       # Step 3: Check Go version
       - name: Verify Go version
-        run: |
-          cd todolist
-          go version
+        working-directory: ./todolist-app
+        run: go version
 
       # Step 4: Run lint
       - name: Run lint
-        run: |
-          cd todolist
-          make lint
+        working-directory: ./todolist-app
+        run: make lint
 
       # Step 5: Run unit tests
       - name: Run unit tests
-        run: |
-          cd todolist
-          make test
+        working-directory: ./todolist-app
+        run: make test
 
       # Step 6: Start the application
       - name: Start application
-        run: |
-          cd todolist
-          make up
+        working-directory: ./todolist-app
+        run: make up
 
       # Step 7: Run end-to-end tests
       - name: Run end-to-end tests
-        run: |
-          cd todolist
-          make test-e2e
+        working-directory: ./todolist-app
+        run: make test-e2e
 
       # Step 8: Build Docker image
       - name: Build Docker image
-        run: |
-          cd todolist
-          make docker-build
+        working-directory: ./todolist-app
+        run: make docker-build
 
       # Step 9: Push Docker image
       - name: Push Docker image
-        run: |
-          cd todolist
-          make docker-push
+        working-directory: ./todolist-app
+        run: make docker-push

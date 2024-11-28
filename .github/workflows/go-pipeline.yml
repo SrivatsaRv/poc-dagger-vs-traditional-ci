@@ -1,17 +1,17 @@
-name: Go Application POC - Pipeline
+name: Go Pipeline
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'todolist/**'  # Trigger only if changes are made in /todolist
+      - 'todolist/**'
   pull_request:
     branches:
       - main
     paths:
-      - 'todolist/**'  # Trigger only if changes are made in /todolist
-  workflow_dispatch:  # Enable manual triggering of the pipeline
+      - 'todolist/**'
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -22,47 +22,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Go
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.20
+      # Step 2: Check Go version
+      - name: Verify Go version
+        run: go version
 
-      # Step 3: Cache Go modules
-      - name: Cache Go modules
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      # Step 4: Install dependencies
+      # Step 3: Install dependencies
       - name: Install dependencies
         run: go mod tidy
 
-      # Step 5: Run lint
+      # Step 4: Run lint
       - name: Run lint
         run: make lint
 
-      # Step 6: Run unit tests
+      # Step 5: Run unit tests
       - name: Run unit tests
         run: make test
 
-      # Step 7: Start the application
+      # Step 6: Start the application
       - name: Start application
         run: make up
 
-      # Step 8: Run end-to-end tests
+      # Step 7: Run end-to-end tests
       - name: Run end-to-end tests
         run: make test-e2e
 
-      # Step 9: Build Docker image
+      # Step 8: Build Docker image
       - name: Build Docker image
         run: make docker-build
 
-      # Step 10: Push Docker image
+      # Step 9: Push Docker image
       - name: Push Docker image
         run: make docker-push

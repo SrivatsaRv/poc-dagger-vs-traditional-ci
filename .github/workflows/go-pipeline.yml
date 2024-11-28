@@ -22,42 +22,48 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Navigate to todolist-app directory
+      # Step 2: Install golangci-lint
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+
+      # Step 3: Change working directory to todolist-app
       - name: Change working directory
         working-directory: ./todolist-app
         run: echo "Working directory set to todolist-app"
 
-      # Step 3: Check Go version
+      # Step 4: Check Go version
       - name: Verify Go version
         working-directory: ./todolist-app
         run: go version
 
-      # Step 4: Run lint
+      # Step 5: Run lint
       - name: Run lint
         working-directory: ./todolist-app
         run: make lint
 
-      # Step 5: Run unit tests
+      # Step 6: Run unit tests
       - name: Run unit tests
         working-directory: ./todolist-app
         run: make test
 
-      # Step 6: Start the application
+      # Step 7: Start the application
       - name: Start application
         working-directory: ./todolist-app
         run: make up
 
-      # Step 7: Run end-to-end tests
+      # Step 8: Run end-to-end tests
       - name: Run end-to-end tests
         working-directory: ./todolist-app
         run: make test-e2e
 
-      # Step 8: Build Docker image
+      # Step 9: Build Docker image
       - name: Build Docker image
         working-directory: ./todolist-app
         run: make docker-build
 
-      # Step 9: Push Docker image
+      # Step 10: Push Docker image
       - name: Push Docker image
         working-directory: ./todolist-app
         run: make docker-push

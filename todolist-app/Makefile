@@ -1,6 +1,6 @@
 # Variables
 IMAGE_NAME=dagger-poc
-VERSION=1.0.0
+VERSION=2.0.0
 
 .PHONY: lint
 lint:

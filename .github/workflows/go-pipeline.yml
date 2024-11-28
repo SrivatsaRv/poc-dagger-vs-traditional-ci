@@ -25,8 +25,10 @@ jobs:
       # Step 2: Install golangci-lint
       - name: Install golangci-lint
         run: |
+          echo "Installing golangci-lint"
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s latest
-          export PATH=$PATH:$(go env GOPATH)/bin
+          echo "Adding ./bin to PATH"
+          echo "PATH=\$PATH:$(pwd)/bin" >> $GITHUB_ENV
 
       # Step 3: Change working directory to todolist-app
       - name: Change working directory

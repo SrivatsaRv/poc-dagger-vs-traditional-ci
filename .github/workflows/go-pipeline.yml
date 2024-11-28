@@ -1,4 +1,4 @@
-name: Go Pipeline
+name: Go Application POC - Pipeline
 
 on:
   push:
@@ -11,6 +11,7 @@ on:
       - main
     paths:
       - 'todolist/**'  # Trigger only if changes are made in /todolist
+  workflow_dispatch:  # Enable manual triggering of the pipeline
 
 jobs:
   build-and-deploy:

@@ -62,7 +62,7 @@ curl -X DELETE http://localhost:8080/todos/{id}
 
 ## Demo - Dagger Pipelines
 
-### Initiliase Dagger SDK 
+### Initiliase Dagger SDK  (it is already in the demo - this is for information only) DO NOT EXECUTE
 ```
 pwd - /Users/admin/poc-dagger-vs-traditional-ci
 
@@ -75,6 +75,44 @@ dagger call lint --directory-arg .
 dagger call test --directory-arg .
 dagger call build --source=.
 dagger call publish-image --source=.
+```
 
+
+### Note
+- Github Actions Pipeline for this Go demo - will be shortly added. 
+
+### Sample CI Pipeline Structure for Python Dagger Pipeline 
+```
+name: Dagger Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  dagger:
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dagger
+        run: pip install dagger-io
+
+      - name: Run Dagger Pipeline
+        run: python dagger_pipeline.py
 
 ```
